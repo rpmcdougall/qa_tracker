@@ -1,2 +1,16 @@
 Flask==3.0.0
 Werkzeug==3.0.1
+SQLAlchemy==2.0.23
+
+# Database drivers (install only what you need)
+# For PostgreSQL:
+psycopg2-binary==2.9.9
+
+# For MySQL:
+PyMySQL==1.1.0
+
+# For Snowflake:
+snowflake-sqlalchemy==1.5.1
+
+# For Databricks:
+databricks-sql-connector==3.0.2

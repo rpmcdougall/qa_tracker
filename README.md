@@ -1,6 +1,6 @@
 # QA Tracker - MVC Application
 
-A simple Python Flask MVC application for managing QA checklists and tracking validation work. Built with SQLite for easy setup and portability.
+A simple Python Flask MVC application for managing QA checklists and tracking validation work. Supports multiple database backends including SQLite, PostgreSQL, MySQL, Snowflake, and Databricks.
 
 ## Features
 
@@ -10,16 +10,18 @@ A simple Python Flask MVC application for managing QA checklists and tracking va
 - **Conduct QA Sessions**: Step through each item and record validation results
 - **Track Results**: View validation history and summary statistics
 - **Show Your Work**: Document exactly what you tested and the results
+- **Multiple Database Support**: Use SQLite (default), PostgreSQL, MySQL, Snowflake, or Databricks as your backend
 
 ## Architecture
 
-This application follows the MVC (Model-View-Controller) pattern:
+This application follows the MVC (Model-View-Controller) pattern with SQLAlchemy ORM:
 
-- **Models** (`models.py`): Database layer with SQLite
+- **Models** (`models.py`): Database layer with SQLAlchemy
   - `Database`: Connection management and schema initialization
   - `QAList`: CRUD operations for QA lists
   - `QAItem`: Managing individual test items
   - `QAValidation`: Recording and retrieving validation results
+  - Supports SQLite, PostgreSQL, MySQL, Snowflake, and Databricks
 
 - **Controllers** (`app.py`): Flask routes handling business logic
   - List management (create, view, publish, delete)
@@ -33,6 +35,8 @@ This application follows the MVC (Model-View-Controller) pattern:
   - Results dashboard
 
 ## Installation
+
+### Quick Start (SQLite - Default)
 
 1. **Clone or download this directory**
 
@@ -48,6 +52,39 @@ This application follows the MVC (Model-View-Controller) pattern:
 
 4. **Open in browser**:
    Navigate to `http://localhost:5000`
+
+### Using Other Databases
+
+To use PostgreSQL, MySQL, Snowflake, or Databricks instead of SQLite:
+
+1. **Set the DATABASE_URL environment variable**:
+   ```bash
+   # PostgreSQL
+   export DATABASE_URL="postgresql+psycopg2://user:pass@localhost:5432/qa_tracker"
+   
+   # MySQL
+   export DATABASE_URL="mysql+pymysql://user:pass@localhost:3306/qa_tracker"
+   
+   # Snowflake
+   export DATABASE_URL="snowflake://user:pass@account.region/db/schema?warehouse=wh&role=role"
+   
+   # Databricks
+   export DATABASE_URL="databricks://token:your_token@workspace.cloud.databricks.com:443/catalog.schema?http_path=/sql/1.0/warehouses/id"
+   ```
+
+2. **Install the appropriate database driver** (already in requirements.txt)
+
+3. **Test the connection**:
+   ```bash
+   python test_db_connection.py
+   ```
+
+4. **Run the application**:
+   ```bash
+   python app.py
+   ```
+
+For detailed database setup instructions, see **[DATABASE_SETUP.md](DATABASE_SETUP.md)**.
 
 ## Usage Workflow
 
@@ -114,6 +151,8 @@ qa_validations (
     actual_result, notes, validator_name
 )
 ```
+
+**Note**: This schema is automatically created by SQLAlchemy ORM and works across all supported databases (SQLite, PostgreSQL, MySQL, Snowflake, Databricks). The ORM handles database-specific syntax differences.
 
 ## Use Cases
 
