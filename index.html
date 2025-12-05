@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}QA Tracker - All Lists{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>QA Lists</h1>
+    <p>Manage your quality assurance checklists</p>
+</div>
+
+{% if lists %}
+    <div class="list-grid">
+        {% for list in lists %}
+        <div class="list-card">
+            <div class="list-card-header">
+                <h3>{{ list.name }}</h3>
+                {% if list.is_published %}
+                    <span class="badge badge-success">Published</span>
+                {% else %}
+                    <span class="badge badge-secondary">Draft</span>
+                {% endif %}
+            </div>
+            
+            {% if list.description %}
+                <p class="list-description">{{ list.description }}</p>
+            {% endif %}
+            
+            <div class="list-meta">
+                <small>Updated: {{ list.updated_at }}</small>
+            </div>
+            
+            <div class="list-actions">
+                <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn btn-primary">View</a>
+                <a href="{{ url_for('view_results', list_id=list.id) }}" class="btn btn-secondary">Results</a>
+                {% if list.is_published %}
+                    <a href="{{ url_for('qa_session', list_id=list.id) }}" class="btn btn-success">Start QA</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No QA lists yet. Create your first list to get started!</p>
+        <a href="{{ url_for('create_list') }}" class="btn btn-primary">Create QA List</a>
+    </div>
+{% endif %}
+{% endblock %}

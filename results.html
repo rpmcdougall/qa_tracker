@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Results - {{ qa_list.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>QA Results: {{ qa_list.name }}</h1>
+    <a href="{{ url_for('view_list', list_id=qa_list.id) }}" class="btn btn-secondary">Back to List</a>
+</div>
+
+<div class="summary-section">
+    <h2>Summary</h2>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-number">{{ summary.total_items or 0 }}</div>
+            <div class="summary-label">Total Validations</div>
+        </div>
+        <div class="summary-card status-pass">
+            <div class="summary-number">{{ summary.passed or 0 }}</div>
+            <div class="summary-label">Passed</div>
+        </div>
+        <div class="summary-card status-fail">
+            <div class="summary-number">{{ summary.failed or 0 }}</div>
+            <div class="summary-label">Failed</div>
+        </div>
+        <div class="summary-card status-skip">
+            <div class="summary-number">{{ summary.skipped or 0 }}</div>
+            <div class="summary-label">Skipped</div>
+        </div>
+        <div class="summary-card status-blocked">
+            <div class="summary-number">{{ summary.blocked or 0 }}</div>
+            <div class="summary-label">Blocked</div>
+        </div>
+    </div>
+</div>
+
+{% if validations %}
+    <div class="results-section">
+        <h2>Validation History</h2>
+        <div class="results-table-wrapper">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Item</th>
+                        <th>Status</th>
+                        <th>Actual Result</th>
+                        <th>Notes</th>
+                        <th>Validator</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for validation in validations %}
+                    <tr class="status-{{ validation.status }}">
+                        <td>{{ validation.validated_at }}</td>
+                        <td>{{ validation.item_description }}</td>
+                        <td>
+                            <span class="status-badge status-{{ validation.status }}">
+                                {{ validation.status | upper }}
+                            </span>
+                        </td>
+                        <td>{{ validation.actual_result or '-' }}</td>
+                        <td>{{ validation.notes or '-' }}</td>
+                        <td>{{ validation.validator_name or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No validations recorded yet.</p>
+        {% if qa_list.is_published %}
+            <a href="{{ url_for('qa_session', list_id=qa_list.id) }}" class="btn btn-primary">Start QA Session</a>
+        {% else %}
+            <p>This list needs to be published before QA sessions can be performed.</p>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% if items %}
+    <div class="items-reference">
+        <h2>QA Items Reference</h2>
+        <div class="items-list">
+            {% for item in items %}
+            <div class="item-card compact">
+                <div class="item-header">
+                    <span class="item-number">#{{ item.item_order }}</span>
+                    {% if item.category %}
+                        <span class="badge badge-info">{{ item.category }}</span>
+                    {% endif %}
+                </div>
+                <div class="item-body">
+                    <h4>{{ item.description }}</h4>
+                    {% if item.expected_result %}
+                        <p><strong>Expected:</strong> {{ item.expected_result }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

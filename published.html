@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Published QA Lists{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Published QA Lists</h1>
+    <p>These lists are ready for QA validation</p>
+</div>
+
+{% if lists %}
+    <div class="list-grid">
+        {% for list in lists %}
+        <div class="list-card">
+            <div class="list-card-header">
+                <h3>{{ list.name }}</h3>
+                <span class="badge badge-success">Published</span>
+            </div>
+            
+            {% if list.description %}
+                <p class="list-description">{{ list.description }}</p>
+            {% endif %}
+            
+            <div class="list-meta">
+                <small>Updated: {{ list.updated_at }}</small>
+            </div>
+            
+            <div class="list-actions">
+                <a href="{{ url_for('qa_session', list_id=list.id) }}" class="btn btn-success">Start QA Session</a>
+                <a href="{{ url_for('view_results', list_id=list.id) }}" class="btn btn-secondary">View Results</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No published QA lists. Publish a list to start QA sessions.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">View All Lists</a>
+    </div>
+{% endif %}
+{% endblock %}

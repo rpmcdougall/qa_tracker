@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Create QA List{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Create New QA List</h1>
+</div>
+
+<form method="POST" class="form">
+    <div class="form-group">
+        <label for="name">List Name *</label>
+        <input type="text" id="name" name="name" required 
+               placeholder="e.g., User Registration Flow QA">
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4"
+                  placeholder="Brief description of what this QA list covers"></textarea>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create List</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

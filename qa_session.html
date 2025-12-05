@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}QA Session - {{ qa_list.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>QA Session: {{ qa_list.name }}</h1>
+    <p>Complete each validation and record your results</p>
+</div>
+
+<div class="qa-session">
+    {% if items %}
+        {% for item in items %}
+        <div class="qa-item" id="item-{{ item.id }}">
+            <div class="qa-item-header">
+                <span class="item-number">#{{ item.item_order }}</span>
+                {% if item.category %}
+                    <span class="badge badge-info">{{ item.category }}</span>
+                {% endif %}
+            </div>
+            
+            <div class="qa-item-body">
+                <h3>{{ item.description }}</h3>
+                
+                {% if item.expected_result %}
+                    <div class="expected-result">
+                        <strong>Expected Result:</strong>
+                        <p>{{ item.expected_result }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if item.notes %}
+                    <div class="item-notes">
+                        <strong>Notes:</strong>
+                        <p>{{ item.notes }}</p>
+                    </div>
+                {% endif %}
+                
+                <form class="validation-form" data-item-id="{{ item.id }}">
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <div class="status-buttons">
+                            <button type="button" class="status-btn" data-status="pass">✓ Pass</button>
+                            <button type="button" class="status-btn" data-status="fail">✗ Fail</button>
+                            <button type="button" class="status-btn" data-status="skip">⊘ Skip</button>
+                            <button type="button" class="status-btn" data-status="blocked">⊗ Blocked</button>
+                        </div>
+                        <input type="hidden" name="status" class="status-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="actual_result_{{ item.id }}">Actual Result</label>
+                        <textarea id="actual_result_{{ item.id }}" name="actual_result" rows="2"
+                                  placeholder="What actually happened?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes_{{ item.id }}">Validation Notes</label>
+                        <textarea id="notes_{{ item.id }}" name="notes" rows="2"
+                                  placeholder="Any issues, observations, or additional context"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="validator_name_{{ item.id }}">Your Name</label>
+                        <input type="text" id="validator_name_{{ item.id }}" name="validator_name"
+                               placeholder="Who performed this validation?">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Record Validation</button>
+                    <span class="validation-status"></span>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="session-complete">
+            <h3>Session Complete!</h3>
+            <p>All validations have been recorded.</p>
+            <a href="{{ url_for('view_results', list_id=qa_list.id) }}" class="btn btn-success">View Results</a>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No items in this QA list.</p>
+            <a href="{{ url_for('view_list', list_id=qa_list.id) }}" class="btn btn-primary">Back to List</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('.validation-form');
+    
+    forms.forEach(form => {
+        const statusButtons = form.querySelectorAll('.status-btn');
+        const statusInput = form.querySelector('.status-input');
+        
+        statusButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                statusButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                statusInput.value = this.dataset.status;
+            });
+        });
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!statusInput.value) {
+                alert('Please select a status');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            formData.append('item_id', form.dataset.itemId);
+            
+            const statusSpan = form.querySelector('.validation-status');
+            statusSpan.textContent = 'Recording...';
+            statusSpan.className = 'validation-status recording';
+            
+            try {
+                const response = await fetch('{{ url_for("validate_item", list_id=qa_list.id) }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    statusSpan.textContent = '✓ Recorded';
+                    statusSpan.className = 'validation-status success';
+                    form.querySelector('.btn-primary').disabled = true;
+                    
+                    // Scroll to next item
+                    const currentItem = form.closest('.qa-item');
+                    const nextItem = currentItem.nextElementSibling;
+                    if (nextItem && nextItem.classList.contains('qa-item')) {
+                        setTimeout(() => {
+                            nextItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 500);
+                    } else {
+                        // Show completion message
+                        document.querySelector('.session-complete').style.display = 'block';
+                    }
+                } else {
+                    statusSpan.textContent = '✗ Error';
+                    statusSpan.className = 'validation-status error';
+                }
+            } catch (error) {
+                statusSpan.textContent = '✗ Error';
+                statusSpan.className = 'validation-status error';
+                console.error('Error:', error);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
