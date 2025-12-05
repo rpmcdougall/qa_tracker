@@ -30,13 +30,27 @@ DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///qa_tracker.db')
 # Databricks
 # DATABASE_URL = 'databricks://token:your_token@workspace.cloud.databricks.com:443/default?http_path=/sql/1.0/warehouses/warehouse_id'
 
-# Connection pool settings
-SQLALCHEMY_ENGINE_OPTIONS = {
-    'pool_pre_ping': True,  # Verify connections before using
-    'pool_recycle': 3600,   # Recycle connections after 1 hour
-    'pool_size': 5,         # Number of connections to maintain
-    'max_overflow': 10      # Max connections above pool_size
-}
+# Connection pool settings - only applied to databases that support pooling (not SQLite)
+def get_engine_options(database_url):
+    """
+    Returns appropriate engine options based on database type.
+    SQLite doesn't support connection pooling, so we exclude those options.
+    """
+    # Check if using SQLite
+    if database_url.startswith('sqlite'):
+        return {
+            'pool_pre_ping': True,  # Verify connections before using
+        }
+    else:
+        # For PostgreSQL, MySQL, Snowflake, Databricks - full pooling support
+        return {
+            'pool_pre_ping': True,  # Verify connections before using
+            'pool_recycle': 3600,   # Recycle connections after 1 hour
+            'pool_size': 5,         # Number of connections to maintain
+            'max_overflow': 10      # Max connections above pool_size
+        }
+
+SQLALCHEMY_ENGINE_OPTIONS = get_engine_options(DATABASE_URL)
 
 # For production, use environment variables:
 # export DATABASE_URL="postgresql://user:pass@host:5432/qa_tracker"
