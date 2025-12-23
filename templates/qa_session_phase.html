@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Phase {{ phase }} QA - {{ session.session_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="phase-indicator phase-{{ phase }}">
+        <h1>Phase {{ phase }} QA: {{ session.session_name }}</h1>
+        <span class="phase-badge">{% if phase == 1 %}Developer QA{% else %}QA Engineer Testing{% endif %}</span>
+    </div>
+    <p>{{ qa_list.name }}</p>
+</div>
+
+{% if phase == 2 %}
+<div class="phase2-controls">
+    <button type="button" class="btn btn-secondary" onclick="showAddItemModal()">+ Add Custom Item</button>
+    {% if templates %}
+    <form method="POST" action="{{ url_for('import_template', session_id=session.id) }}" style="display: inline;">
+        <select name="template_id" onchange="this.form.submit()" class="template-select">
+            <option value="">Import from Template...</option>
+            {% for template in templates %}
+            <option value="{{ template.id }}">{{ template.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="qa-session">
+    {% if items %}
+        {% for item in items %}
+        <div class="qa-item" id="item-{{ loop.index }}">
+            <div class="qa-item-header">
+                <span class="item-number">#{{ item.item_order }}</span>
+                {% if item.category %}
+                    <span class="badge badge-info">{{ item.category }}</span>
+                {% endif %}
+                {% if item.source == 'phase2' %}
+                    <span class="badge badge-warning">Phase 2 Item</span>
+                {% endif %}
+            </div>
+
+            <div class="qa-item-body">
+                <h3>{{ item.description }}</h3>
+
+                {% if item.expected_result %}
+                    <div class="expected-result">
+                        <strong>Expected Result:</strong>
+                        <p>{{ item.expected_result }}</p>
+                    </div>
+                {% endif %}
+
+                {% if item.notes %}
+                    <div class="item-notes">
+                        <strong>Notes:</strong>
+                        <p>{{ item.notes }}</p>
+                    </div>
+                {% endif %}
+
+                <form class="validation-form"
+                      data-item-id="{{ item.id if item.source == 'original' else '' }}"
+                      data-phase2-item-id="{{ item.phase2_item_id if item.source == 'phase2' else '' }}"
+                      data-phase="{{ phase }}">
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <div class="status-buttons">
+                            <button type="button" class="status-btn" data-status="pass">✓ Pass</button>
+                            <button type="button" class="status-btn" data-status="fail">✗ Fail</button>
+                            <button type="button" class="status-btn" data-status="skip">⊘ Skip</button>
+                            <button type="button" class="status-btn" data-status="blocked">⊗ Blocked</button>
+                        </div>
+                        <input type="hidden" name="status" class="status-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Actual Result</label>
+                        <textarea name="actual_result" rows="2" placeholder="What actually happened?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Validation Notes</label>
+                        <textarea name="notes" rows="2" placeholder="Any issues or observations"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input type="text" name="validator_name" placeholder="Who performed this validation?">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Record Validation</button>
+                    <span class="validation-status"></span>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if phase == 1 %}
+        <div class="phase-complete-section">
+            <h3>Complete Phase 1</h3>
+            <p>Once all items are validated, complete Phase 1 to enable Phase 2 testing.</p>
+            <form method="POST" action="{{ url_for('complete_phase1', session_id=session.id) }}">
+                <div class="form-group">
+                    <label>Your Name *</label>
+                    <input type="text" name="completed_by" required placeholder="Developer name">
+                </div>
+                <button type="submit" class="btn btn-success">Complete Phase 1</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="phase-complete-section">
+            <h3>Complete Phase 2</h3>
+            <p>Once all testing is complete, finalize this session.</p>
+            <form method="POST" action="{{ url_for('complete_phase2', session_id=session.id) }}">
+                <div class="form-group">
+                    <label>Your Name *</label>
+                    <input type="text" name="completed_by" required placeholder="QA Engineer name">
+                </div>
+                <button type="submit" class="btn btn-success">Complete Phase 2</button>
+            </form>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <p>No items in this session yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% if phase == 2 %}
+<div id="addItemModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="modal-close" onclick="hideAddItemModal()">&times;</span>
+        <h3>Add Custom QA Item</h3>
+        <form id="addItemForm">
+            <div class="form-group">
+                <label>Description *</label>
+                <textarea name="description" required rows="3" placeholder="What to test"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" name="category" placeholder="e.g., Security, Performance">
+            </div>
+            <div class="form-group">
+                <label>Expected Result</label>
+                <textarea name="expected_result" rows="2" placeholder="What should happen"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="2" placeholder="Additional context"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Item</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Status button selection
+document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const form = this.closest('form');
+        form.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        form.querySelector('.status-input').value = this.dataset.status;
+    });
+});
+
+// Validation form submission
+document.querySelectorAll('.validation-form').forEach(form => {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const statusInput = this.querySelector('.status-input');
+        if (!statusInput.value) {
+            alert('Please select a status');
+            return;
+        }
+
+        const formData = new FormData(this);
+        formData.append('phase', this.dataset.phase);
+        const itemId = this.dataset.itemId;
+        const phase2ItemId = this.dataset.phase2ItemId;
+        if (itemId) formData.append('item_id', itemId);
+        if (phase2ItemId) formData.append('phase2_item_id', phase2ItemId);
+
+        const statusSpan = this.querySelector('.validation-status');
+        statusSpan.textContent = 'Recording...';
+
+        try {
+            const response = await fetch('{{ url_for("validate_item_session", session_id=session.id) }}', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                statusSpan.textContent = '✓ Recorded!';
+                statusSpan.style.color = 'green';
+                setTimeout(() => {
+                    const nextItem = this.closest('.qa-item').nextElementSibling;
+                    if (nextItem && nextItem.classList.contains('qa-item')) {
+                        nextItem.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 500);
+            } else {
+                statusSpan.textContent = '✗ Error: ' + (data.error || 'Unknown error');
+                statusSpan.style.color = 'red';
+            }
+        } catch (error) {
+            statusSpan.textContent = '✗ Error: ' + error.message;
+            statusSpan.style.color = 'red';
+        }
+    });
+});
+
+{% if phase == 2 %}
+function showAddItemModal() {
+    document.getElementById('addItemModal').style.display = 'block';
+}
+
+function hideAddItemModal() {
+    document.getElementById('addItemModal').style.display = 'none';
+}
+
+document.getElementById('addItemForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    try {
+        const response = await fetch('{{ url_for("add_phase2_item", session_id=session.id) }}', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

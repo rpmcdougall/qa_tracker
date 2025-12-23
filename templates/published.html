@@ -9,26 +9,72 @@
 </div>
 
 {% if lists %}
-    <div class="list-grid">
+    <div class="lists-container">
         {% for list in lists %}
-        <div class="list-card">
-            <div class="list-card-header">
-                <h3>{{ list.name }}</h3>
-                <span class="badge badge-success">Published</span>
+        <div class="list-section">
+            <div class="list-section-header">
+                <div>
+                    <h2>{{ list.name }}</h2>
+                    {% if list.description %}
+                        <p class="list-description">{{ list.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="list-section-actions">
+                    <span class="badge badge-success">Published</span>
+                    <a href="{{ url_for('create_session', list_id=list.id) }}" class="btn btn-success">Create New Session</a>
+                    <a href="{{ url_for('view_list', list_id=list.id) }}" class="btn btn-secondary">Manage List</a>
+                </div>
             </div>
-            
-            {% if list.description %}
-                <p class="list-description">{{ list.description }}</p>
+
+            {% if list.sessions %}
+                <div class="sessions-grid">
+                    {% for session in list.sessions %}
+                    <div class="session-card">
+                        <div class="session-card-header">
+                            <h4>{{ session.session_name }}</h4>
+                            {% if session.completed_at %}
+                                <span class="badge badge-success">Completed</span>
+                            {% elif session.current_phase == 2 %}
+                                <span class="badge badge-info">Phase 2</span>
+                            {% else %}
+                                <span class="badge badge-warning">Phase 1</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="session-card-body">
+                            <p><small>Started: {{ session.started_at }}</small></p>
+                            {% if session.phase1_completed_by %}
+                                <p><small>Phase 1: {{ session.phase1_completed_by }}</small></p>
+                            {% endif %}
+                            {% if session.phase2_completed_by %}
+                                <p><small>Phase 2: {{ session.phase2_completed_by }}</small></p>
+                            {% endif %}
+                        </div>
+
+                        <div class="session-card-actions">
+                            {% if session.completed_at %}
+                                <a href="{{ url_for('session_results', session_id=session.id) }}" class="btn btn-primary btn-sm">View Results</a>
+                            {% elif session.current_phase == 2 %}
+                                {% if not session.phase2_started_at %}
+                                    <form method="POST" action="{{ url_for('start_phase2', session_id=session.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-info btn-sm">Start Phase 2</button>
+                                    </form>
+                                {% else %}
+                                    <a href="{{ url_for('qa_session_phase', session_id=session.id, phase=2) }}" class="btn btn-info btn-sm">Continue Phase 2</a>
+                                {% endif %}
+                                <a href="{{ url_for('session_results', session_id=session.id) }}" class="btn btn-secondary btn-sm">View Results</a>
+                            {% else %}
+                                <a href="{{ url_for('qa_session_phase', session_id=session.id, phase=1) }}" class="btn btn-warning btn-sm">Continue Phase 1</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-small">
+                    <p>No sessions yet. Create a session to start QA testing!</p>
+                </div>
             {% endif %}
-            
-            <div class="list-meta">
-                <small>Updated: {{ list.updated_at }}</small>
-            </div>
-            
-            <div class="list-actions">
-                <a href="{{ url_for('qa_session', list_id=list.id) }}" class="btn btn-success">Start QA Session</a>
-                <a href="{{ url_for('view_results', list_id=list.id) }}" class="btn btn-secondary">View Results</a>
-            </div>
         </div>
         {% endfor %}
     </div>

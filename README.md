@@ -7,8 +7,11 @@ A simple Python Flask MVC application for managing QA checklists and tracking va
 - **Create QA Lists**: Define comprehensive QA checklists for your development work
 - **Organize Items**: Add detailed test items with categories, expected results, and notes
 - **Publish Lists**: Publish finalized lists to make them available for QA sessions
-- **Conduct QA Sessions**: Step through each item and record validation results
-- **Track Results**: View validation history and summary statistics
+- **Two-Phase QA Sessions**: Developer validation (Phase 1) followed by QA Engineer review (Phase 2)
+- **Session Management**: Create named sessions to track validation work over time
+- **Phase 2 Customization**: Add custom test items and import from templates during QA review
+- **Template System**: Create reusable QA checklists for common testing scenarios
+- **Track Results**: View validation history with separate Phase 1 and Phase 2 results, plus chronological timeline
 - **Show Your Work**: Document exactly what you tested and the results
 - **Multiple Database Support**: Use SQLite (default), PostgreSQL, MySQL, Snowflake, or Databricks as your backend
 
@@ -20,14 +23,20 @@ This application follows the MVC (Model-View-Controller) pattern with SQLAlchemy
   - `Database`: Connection management and schema initialization
   - `QAList`: CRUD operations for QA lists
   - `QAItem`: Managing individual test items
-  - `QAValidation`: Recording and retrieving validation results
+  - `QASession`: Two-phase session management and workflow
+  - `QAValidation`: Recording and retrieving validation results by phase
+  - `QATemplate`: Reusable QA checklist templates
+  - `QASessionPhase2Item`: Custom items added during Phase 2
   - Supports SQLite, PostgreSQL, MySQL, Snowflake, and Databricks
 
 - **Controllers** (`app.py`): Flask routes handling business logic
   - List management (create, view, publish, delete)
-  - Item management (add, delete)
-  - QA session management
-  - Results viewing
+  - Item management (add, delete, reorder)
+  - Session management (create, Phase 1/2 workflow, complete)
+  - Phase 2 item management (add custom items, import templates)
+  - Template management (create, add items)
+  - QA validation recording (Phase 1 and Phase 2)
+  - Results viewing (separate Phase 1, Phase 2, and Timeline tabs)
 
 - **Views** (`templates/`): HTML templates with Jinja2
   - List views (index, create, view)
@@ -111,44 +120,99 @@ For detailed database setup instructions, see **[DATABASE_SETUP.md](DATABASE_SET
 2. Click "Publish" when ready
 3. Published lists become available for QA sessions
 
-### 4. Run QA Session
+### 4. Create a QA Session
 
 1. Go to "Published Lists"
-2. Click "Start QA Session" on your list
-3. For each item:
+2. Click "Create New Session" on your list
+3. Enter a session name (e.g., "Sprint 23 Testing")
+4. Click "Start Phase 1"
+
+### 5. Phase 1 - Developer QA
+
+1. For each item in the list:
    - Read the description and expected result
    - Perform the test
    - Select status: Pass, Fail, Skip, or Blocked
    - Record actual result and any notes
    - Enter your name as validator
    - Click "Record Validation"
-4. The app will auto-scroll to the next item
+2. The app will auto-scroll to the next item
+3. After validating all items, enter your name and click "Complete Phase 1"
 
-### 5. View Results
+### 6. Phase 2 - QA Engineer Review
 
-1. Click "View Results" from any list
-2. See summary statistics (total, passed, failed, etc.)
-3. Review detailed validation history
-4. Use this to show stakeholders what was tested
+1. Click "Start Phase 2" from the session view
+2. Re-validate original items (separate from Phase 1 validations):
+   - Test each item independently
+   - Record your own findings
+3. Add custom test items (optional):
+   - Click "+ Add Custom Item"
+   - Fill in description, category, expected result
+   - Validate the custom item
+4. Import from templates (optional):
+   - Select a template from the dropdown
+   - Click "Import Template Items"
+   - Validate imported items
+5. After completing all validations, enter your name and click "Complete Phase 2"
+
+### 7. View Results
+
+1. Click "View Results" from the session
+2. See three tabs:
+   - **Phase 1 Results**: Developer validations and summary stats
+   - **Phase 2 Results**: QA Engineer validations, includes custom items
+   - **Timeline**: Chronological view of all validations from both phases
+3. Use this to show stakeholders what was tested in each phase
+
+### 8. Manage Templates (Optional)
+
+1. Navigate to "Manage Templates"
+2. Create reusable QA checklists for common scenarios (e.g., "Security Checklist")
+3. Add items to templates
+4. Import template items during Phase 2 of any session
 
 ## Database Schema
 
 ```sql
 -- QA Lists
 qa_lists (
-    id, name, description, created_at, updated_at, is_published
+    id, name, description, created_at, updated_at, status
 )
 
 -- QA Items (test cases)
 qa_items (
-    id, list_id, item_order, category, description, 
+    id, list_id, item_order, category, description,
     expected_result, notes
 )
 
--- QA Validations (results)
+-- QA Sessions (two-phase workflow tracking)
+qa_sessions (
+    id, list_id, session_name, created_at,
+    current_phase, phase1_started_at, phase1_completed_at, phase1_completed_by,
+    phase2_started_at, phase2_completed_at, phase2_completed_by
+)
+
+-- QA Validations (results from both phases)
 qa_validations (
-    id, list_id, item_id, validated_at, status,
-    actual_result, notes, validator_name
+    id, session_id, phase, list_id, item_id, phase2_item_id,
+    validated_at, status, actual_result, notes, validator_name
+)
+
+-- QA Templates (reusable checklists)
+qa_templates (
+    id, name, description, category, is_active, created_at, updated_at
+)
+
+-- QA Template Items
+qa_template_items (
+    id, template_id, item_order, category, description,
+    expected_result, notes
+)
+
+-- QA Session Phase 2 Items (custom items added during Phase 2)
+qa_session_phase2_items (
+    id, session_id, item_order, category, description,
+    expected_result, notes, source, template_id, created_at
 )
 ```
 
@@ -248,14 +312,32 @@ Change the port in `app.py`: `app.run(debug=True, port=5001)`
 **Flash messages not showing**:
 Ensure you have a secret key set in `app.py`
 
+## Testing
+
+For comprehensive testing documentation and guides, see **[TESTING.md](TESTING.md)**.
+
+The application includes:
+- Automated test setup script (`test_setup.py`)
+- Comprehensive model unit tests (`tests/test_models.py`)
+- Full API endpoint tests (`tests/test_api.py`)
+- Manual testing workflow documentation
+
+Run tests with:
+```bash
+python test_setup.py
+python -m unittest discover tests
+```
+
 ## Future Enhancements
 
 - Test automation integration
 - Jira/GitHub issue linking
-- Email notifications for failures
-- Test metrics and trends
-- Screenshot attachments
-- Multi-user support with roles
+- Email notifications for phase completions
+- Test metrics and trends dashboard
+- Screenshot attachments for validations
+- Multi-user support with authentication and roles
+- Export results to PDF/CSV
+- API for CI/CD integration
 
 ## License
 

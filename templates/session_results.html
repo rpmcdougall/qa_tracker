@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Results - {{ session.session_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ session.session_name }}</h1>
+    <p>{{ qa_list.name }}</p>
+</div>
+
+<div class="session-meta">
+    <div class="meta-item">
+        <strong>Started:</strong> {{ session.started_at }}
+    </div>
+    {% if session.phase1_completed_by %}
+    <div class="meta-item">
+        <strong>Phase 1:</strong> Completed by {{ session.phase1_completed_by }} on {{ session.phase1_completed_at }}
+    </div>
+    {% endif %}
+    {% if session.phase2_completed_by %}
+    <div class="meta-item">
+        <strong>Phase 2:</strong> Completed by {{ session.phase2_completed_by }} on {{ session.phase2_completed_at }}
+    </div>
+    {% endif %}
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('phase1')">Phase 1 Results</button>
+    <button class="tab-btn" onclick="switchTab('phase2')">Phase 2 Results</button>
+    <button class="tab-btn" onclick="switchTab('timeline')">Timeline</button>
+</div>
+
+<div id="phase1-tab" class="tab-content active">
+    <div class="summary-cards">
+        <div class="summary-card">
+            <h4>Total Validations</h4>
+            <p class="summary-number">{{ summary_phase1.total_items }}</p>
+        </div>
+        <div class="summary-card passed">
+            <h4>Passed</h4>
+            <p class="summary-number">{{ summary_phase1.passed }}</p>
+        </div>
+        <div class="summary-card failed">
+            <h4>Failed</h4>
+            <p class="summary-number">{{ summary_phase1.failed }}</p>
+        </div>
+        <div class="summary-card skipped">
+            <h4>Skipped</h4>
+            <p class="summary-number">{{ summary_phase1.skipped }}</p>
+        </div>
+        <div class="summary-card blocked">
+            <h4>Blocked</h4>
+            <p class="summary-number">{{ summary_phase1.blocked }}</p>
+        </div>
+    </div>
+
+    <h3>Phase 1 Validations</h3>
+    {% if validations_phase1 %}
+    <div class="validations-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Item</th>
+                    <th>Status</th>
+                    <th>Actual Result</th>
+                    <th>Notes</th>
+                    <th>Validator</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for validation in validations_phase1 %}
+                <tr class="status-{{ validation.status }}">
+                    <td>{{ validation.validated_at }}</td>
+                    <td>{{ validation.item_description }}</td>
+                    <td><span class="badge badge-{{ validation.status }}">{{ validation.status }}</span></td>
+                    <td>{{ validation.actual_result or '-' }}</td>
+                    <td>{{ validation.notes or '-' }}</td>
+                    <td>{{ validation.validator_name or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No Phase 1 validations yet.</p>
+    {% endif %}
+</div>
+
+<div id="phase2-tab" class="tab-content">
+    <div class="summary-cards">
+        <div class="summary-card">
+            <h4>Total Validations</h4>
+            <p class="summary-number">{{ summary_phase2.total_items }}</p>
+        </div>
+        <div class="summary-card passed">
+            <h4>Passed</h4>
+            <p class="summary-number">{{ summary_phase2.passed }}</p>
+        </div>
+        <div class="summary-card failed">
+            <h4>Failed</h4>
+            <p class="summary-number">{{ summary_phase2.failed }}</p>
+        </div>
+        <div class="summary-card skipped">
+            <h4>Skipped</h4>
+            <p class="summary-number">{{ summary_phase2.skipped }}</p>
+        </div>
+        <div class="summary-card blocked">
+            <h4>Blocked</h4>
+            <p class="summary-number">{{ summary_phase2.blocked }}</p>
+        </div>
+    </div>
+
+    <h3>Phase 2 Validations</h3>
+    {% if validations_phase2 %}
+    <div class="validations-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Item</th>
+                    <th>Status</th>
+                    <th>Actual Result</th>
+                    <th>Notes</th>
+                    <th>Validator</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for validation in validations_phase2 %}
+                <tr class="status-{{ validation.status }}">
+                    <td>{{ validation.validated_at }}</td>
+                    <td>
+                        {{ validation.item_description }}
+                        {% if validation.phase2_item_id %}
+                        <span class="badge badge-warning">Phase 2 Item</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-{{ validation.status }}">{{ validation.status }}</span></td>
+                    <td>{{ validation.actual_result or '-' }}</td>
+                    <td>{{ validation.notes or '-' }}</td>
+                    <td>{{ validation.validator_name or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No Phase 2 validations yet.</p>
+    {% endif %}
+</div>
+
+<div id="timeline-tab" class="tab-content">
+    <h3>Chronological Timeline</h3>
+    {% if timeline %}
+    <div class="validations-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Phase</th>
+                    <th>Item</th>
+                    <th>Status</th>
+                    <th>Actual Result</th>
+                    <th>Notes</th>
+                    <th>Validator</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for validation in timeline %}
+                <tr class="status-{{ validation.status }}">
+                    <td>{{ validation.validated_at }}</td>
+                    <td><span class="phase-badge phase-{{ validation.phase }}">Phase {{ validation.phase }}</span></td>
+                    <td>
+                        {{ validation.item_description }}
+                        {% if validation.phase2_item_id %}
+                        <span class="badge badge-warning">Phase 2 Item</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-{{ validation.status }}">{{ validation.status }}</span></td>
+                    <td>{{ validation.actual_result or '-' }}</td>
+                    <td>{{ validation.notes or '-' }}</td>
+                    <td>{{ validation.validator_name or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No validations yet.</p>
+    {% endif %}
+</div>
+
+<div class="results-actions">
+    <a href="{{ url_for('published_lists') }}" class="btn btn-secondary">Back to Published Lists</a>
+    <a href="{{ url_for('view_list', list_id=qa_list.id) }}" class="btn btn-primary">View List</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}

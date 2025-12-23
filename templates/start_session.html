@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Create QA Session - {{ qa_list.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Create QA Session</h1>
+    <p>Start a new QA session for <strong>{{ qa_list.name }}</strong></p>
+</div>
+
+<div class="section">
+    <div class="form-container">
+        <form method="POST" action="{{ url_for('create_session', list_id=qa_list.id) }}">
+            <div class="form-group">
+                <label for="session_name">Session Name <span class="required">*</span></label>
+                <input type="text"
+                       id="session_name"
+                       name="session_name"
+                       placeholder="e.g., v2.1 Release QA, Sprint 23 Testing"
+                       required>
+                <small>Give this session a descriptive name to identify it later</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">Start Phase 1</button>
+                <a href="{{ url_for('view_list', list_id=qa_list.id) }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="info-box">
+        <h3>How Two-Phase QA Works:</h3>
+        <div class="phase-info">
+            <div class="phase-step">
+                <span class="phase-badge phase-1">Phase 1</span>
+                <h4>Developer QA</h4>
+                <p>The developer tests their own work against the checklist. All items must be validated before moving to Phase 2.</p>
+            </div>
+            <div class="phase-step">
+                <span class="phase-badge phase-2">Phase 2</span>
+                <h4>QA Engineer Testing</h4>
+                <p>The QA Engineer validates the same items and can also:</p>
+                <ul>
+                    <li>Add custom test items on-the-fly</li>
+                    <li>Import items from QA templates</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

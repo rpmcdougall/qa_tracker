@@ -81,6 +81,64 @@
     {% endif %}
 </div>
 
+<div class="section">
+    <div class="section-header">
+        <h2>QA Sessions ({{ sessions|length }})</h2>
+        {% if qa_list.is_published %}
+            <a href="{{ url_for('create_session', list_id=qa_list.id) }}" class="btn btn-success">Create New Session</a>
+        {% endif %}
+    </div>
+
+    {% if sessions %}
+        <div class="sessions-list">
+            {% for session in sessions %}
+            <div class="session-card">
+                <div class="session-header">
+                    <h4>{{ session.session_name }}</h4>
+                    {% if session.completed_at %}
+                        <span class="badge badge-success">Completed</span>
+                    {% elif session.current_phase == 2 %}
+                        <span class="badge badge-info">Phase 2</span>
+                    {% else %}
+                        <span class="badge badge-warning">Phase 1</span>
+                    {% endif %}
+                </div>
+
+                <div class="session-body">
+                    <p><strong>Started:</strong> {{ session.started_at }}</p>
+                    {% if session.phase1_completed_at %}
+                        <p><strong>Phase 1 completed by:</strong> {{ session.phase1_completed_by }} on {{ session.phase1_completed_at }}</p>
+                    {% endif %}
+                    {% if session.phase2_completed_at %}
+                        <p><strong>Phase 2 completed by:</strong> {{ session.phase2_completed_by }} on {{ session.phase2_completed_at }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="session-actions">
+                    {% if session.completed_at %}
+                        <a href="{{ url_for('session_results', session_id=session.id) }}" class="btn btn-primary btn-sm">View Results</a>
+                    {% elif session.current_phase == 2 %}
+                        <a href="{{ url_for('qa_session_phase', session_id=session.id, phase=2) }}" class="btn btn-info btn-sm">Continue Phase 2</a>
+                        <a href="{{ url_for('session_results', session_id=session.id) }}" class="btn btn-secondary btn-sm">View Results</a>
+                    {% else %}
+                        <a href="{{ url_for('qa_session_phase', session_id=session.id, phase=1) }}" class="btn btn-warning btn-sm">Continue Phase 1</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            {% if qa_list.is_published %}
+                <p>No sessions yet. Create a session to start QA testing!</p>
+                <a href="{{ url_for('create_session', list_id=qa_list.id) }}" class="btn btn-success">Create New Session</a>
+            {% else %}
+                <p>Publish this list to create QA sessions.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
 <div class="danger-zone">
     <h3>Danger Zone</h3>
     <p>Deleting this list will remove all items and validation records.</p>

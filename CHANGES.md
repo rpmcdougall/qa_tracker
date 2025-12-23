@@ -1,3 +1,146 @@
+# QA Tracker - Changes Summary
+
+## Version 2.0 - Two-Phase QA Feature (2024)
+
+### Major New Feature: Two-Phase QA Workflow
+
+The application now supports a comprehensive two-phase QA workflow where developers validate their work first (Phase 1), followed by independent QA engineer review (Phase 2).
+
+### What's New
+
+#### 1. **Session Management System**
+   - Create named QA sessions for each testing cycle
+   - Track session status: Phase 1 → Phase 2 → Completed
+   - View session history and progress
+   - Multiple sessions can exist for the same QA list
+
+#### 2. **Two-Phase Workflow**
+   - **Phase 1 (Developer QA)**:
+     - Developer validates their own work against the checklist
+     - Must complete all item validations before advancing
+     - Records validator name and completion timestamp
+   - **Phase 2 (QA Engineer Review)**:
+     - QA Engineer independently validates all original items
+     - Can add custom test items on-the-fly
+     - Can import items from reusable templates
+     - Separate validations from Phase 1 (same item can have different results)
+
+#### 3. **Template System**
+   - Create reusable QA checklist templates
+   - Manage template items (add, edit, organize)
+   - Import template items during Phase 2
+   - Templates organized by category
+
+#### 4. **Enhanced Results Display**
+   - Three-tab interface:
+     - **Phase 1 Results**: Developer validations and summary statistics
+     - **Phase 2 Results**: QA Engineer validations, including custom items
+     - **Timeline**: Chronological view of all validations from both phases
+   - Summary cards showing pass/fail/skip/blocked counts per phase
+   - Visual phase badges and indicators throughout the UI
+
+#### 5. **New Database Tables**
+   - `qa_sessions`: Session tracking with phase workflow fields
+   - `qa_templates`: Reusable QA checklist templates
+   - `qa_template_items`: Items within templates
+   - `qa_session_phase2_items`: Custom items added during Phase 2
+   - Enhanced `qa_validations`: Now tracks session_id and phase
+
+#### 6. **New Service Classes** (`models.py`)
+   - `QASession`: Session lifecycle and phase workflow management
+   - `QATemplate`: Template CRUD operations
+   - `QASessionPhase2Item`: Phase 2 custom item management
+   - Enhanced `QAValidation`: Phase-aware validation tracking
+
+#### 7. **New API Routes** (`app.py`)
+   - Session management: create, view, delete
+   - Phase workflow: complete Phase 1, start Phase 2, complete Phase 2
+   - Phase 2 items: add custom item, import from template
+   - Template management: create, add items, view items
+   - Phase-aware validation recording
+
+#### 8. **New UI Templates**
+   - `start_session.html`: Create new QA session
+   - `qa_session_phase.html`: Phase-aware QA interface (replaces qa_session.html)
+   - `session_results.html`: Three-tab results view (replaces results.html)
+   - `templates_manage.html`: Template management interface
+   - Updated `published.html`: Shows sessions instead of just lists
+   - Updated `view_list.html`: Displays session history
+
+#### 9. **Enhanced CSS Styling** (`style.css`)
+   - Phase indicator banners with gradients
+   - Tab system with smooth transitions
+   - Modal dialogs for adding items
+   - Session cards with status badges
+   - Summary cards with color coding
+   - Responsive design improvements
+   - 650+ lines of new phase-related styles
+
+#### 10. **Comprehensive Testing**
+   - `test_setup.py`: Automated end-to-end workflow validation
+   - `tests/test_models.py`: 50+ unit tests for all service classes
+   - `tests/test_api.py`: 40+ integration tests for Flask routes
+   - `TESTING.md`: Comprehensive manual testing guide
+
+### Key Benefits
+
+1. **Independent Validation**: Developers and QA engineers validate independently
+2. **Flexible Phase 2**: Add custom items and import templates during QA review
+3. **Complete Tracking**: Separate results per phase with chronological timeline
+4. **Reusable Checklists**: Templates save time on common testing scenarios
+5. **Better Documentation**: Shows exactly what was tested by whom and when
+6. **Sequential Workflow**: Phase 1 must complete before Phase 2 can start
+
+### File Changes
+
+#### Modified Files:
+- `models.py` - Added 3 new models, enhanced QAValidation, 700+ lines added
+- `app.py` - Added 15+ new routes for sessions, templates, Phase 2 items
+- `static/css/style.css` - Added 650+ lines of phase-related styling
+- `README.md` - Updated with two-phase workflow documentation
+- `ARCHITECTURE.md` - Updated with new models and data flow diagrams
+- `QUICKSTART.md` - Updated with two-phase workflow instructions
+- `templates/published.html` - Transformed to show sessions
+- `templates/view_list.html` - Added sessions section
+
+#### New Files:
+- `templates/start_session.html` - Session creation form
+- `templates/qa_session_phase.html` - Phase-aware QA interface
+- `templates/session_results.html` - Three-tab results display
+- `templates/templates_manage.html` - Template management
+- `tests/test_models.py` - Model unit tests
+- `tests/test_api.py` - API integration tests
+- `test_setup.py` - Automated setup validation
+- `TESTING.md` - Comprehensive testing guide
+
+### Backward Compatibility
+
+⚠️ **Breaking Changes**:
+- Old validation workflow (direct list validation) replaced with session-based workflow
+- Results routes changed from `/list/<id>/results` to `/session/<id>/results`
+- QA session routes changed from `/qa/<list_id>` to `/qa/<session_id>/phase/<phase>`
+
+**Migration Path**:
+- Existing `qa_validations` without `session_id` may need migration
+- Old templates (qa_session.html, results.html) replaced with phase-aware versions
+- Update any bookmarks or links to use session-based URLs
+
+### Usage Changes
+
+**Old Workflow**:
+1. Create list → Add items → Publish
+2. Start QA → Validate items → View results
+
+**New Workflow**:
+1. Create list → Add items → Publish
+2. Create session → Phase 1 validation → Complete Phase 1
+3. Start Phase 2 → Add custom items/templates → Validate → Complete Phase 2
+4. View results (Phase 1 tab, Phase 2 tab, Timeline tab)
+
+---
+
+## Version 1.1 - Database Backend Support (2024)
+
 # Database Backend Support - Changes Summary
 
 ## What's New

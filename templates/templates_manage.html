@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Manage QA Templates{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>QA Templates</h1>
+    <p>Manage reusable QA checklists</p>
+</div>
+
+<div class="section">
+    <div class="section-header">
+        <h2>Create New Template</h2>
+    </div>
+    <form method="POST" action="{{ url_for('create_template') }}" class="form-inline">
+        <input type="text" name="name" placeholder="Template Name" required>
+        <input type="text" name="description" placeholder="Description">
+        <input type="text" name="category" placeholder="Category">
+        <button type="submit" class="btn btn-success">Create Template</button>
+    </form>
+</div>
+
+<div class="section">
+    <h2>Existing Templates</h2>
+    {% if templates %}
+        {% for template in templates %}
+        <div class="template-card">
+            <div class="template-header">
+                <h3>{{ template.name }}</h3>
+                {% if template.is_active %}
+                    <span class="badge badge-success">Active</span>
+                {% else %}
+                    <span class="badge badge-secondary">Inactive</span>
+                {% endif %}
+            </div>
+            {% if template.description %}
+                <p>{{ template.description }}</p>
+            {% endif %}
+            {% if template.category %}
+                <p><strong>Category:</strong> {{ template.category }}</p>
+            {% endif %}
+
+            <div class="template-items-section">
+                <h4>Add Item to Template</h4>
+                <form method="POST" action="{{ url_for('add_template_item', template_id=template.id) }}" class="template-item-form">
+                    <div class="form-row">
+                        <input type="text" name="description" placeholder="Item Description" required style="flex: 2;">
+                        <input type="text" name="category" placeholder="Category" style="flex: 1;">
+                    </div>
+                    <div class="form-row">
+                        <textarea name="expected_result" placeholder="Expected Result" rows="2"></textarea>
+                        <textarea name="notes" placeholder="Notes" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Add Item</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <p>No templates yet. Create your first reusable QA checklist!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

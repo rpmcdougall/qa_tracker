@@ -68,7 +68,10 @@ Handles all database operations:
 - `Database`: Connection pooling and schema setup
 - `QAList`: Manages QA list lifecycle (create, publish, delete)
 - `QAItem`: Handles test items within lists
-- `QAValidation`: Records and retrieves validation results
+- `QASession`: Two-phase workflow management (Phase 1 → Phase 2)
+- `QAValidation`: Records and retrieves validation results by phase
+- `QATemplate`: Manages reusable QA checklist templates
+- `QASessionPhase2Item`: Handles custom items added during Phase 2
 
 ### Controllers (Business Logic)
 **File**: `app.py`
@@ -82,9 +85,12 @@ Coordinates between models and views:
 
 **Route Groups**:
 - List Management: Create, view, publish, delete lists
-- Item Management: Add and delete test items
-- QA Sessions: Conduct validation sessions
-- Results: View validation history and summaries
+- Item Management: Add, delete, and reorder test items
+- Session Management: Create sessions, manage Phase 1/2 workflow, complete phases
+- Template Management: Create templates, add template items
+- Phase 2 Item Management: Add custom items, import from templates
+- QA Validation: Record validations for Phase 1 and Phase 2
+- Results: View separate Phase 1, Phase 2, and Timeline results
 
 ### Views (Presentation Layer)
 **Directory**: `templates/`
@@ -126,28 +132,59 @@ HTML templates with Jinja2:
 10. View displays the new QA list
 ```
 
-### Running a QA Session
+### Running a Two-Phase QA Session
 
 ```
-1. User navigates to published list
+Phase 1 (Developer QA):
+1. User creates session for published list
    ↓
-2. Controller fetches list and items via models
+2. Controller calls QASession.create() → starts in Phase 1
    ↓
-3. View renders qa_session.html with data
+3. User validates each item via /qa/<session_id>/phase/1
    ↓
-4. User completes validation for an item
+4. JavaScript sends AJAX POST to /qa/<session_id>/validate with phase=1
    ↓
-5. JavaScript sends AJAX POST to /qa/<id>/validate
+5. Controller calls QAValidation.create(session_id, phase=1, ...)
    ↓
-6. Controller receives validation data
+6. User completes all items, clicks "Complete Phase 1"
    ↓
-7. Controller calls QAValidation.create()
+7. Controller calls QASession.complete_phase1()
    ↓
-8. Model inserts validation record
+8. Model verifies all items validated, updates phase1_completed_at
+
+Phase 2 (QA Engineer Review):
+9. User clicks "Start Phase 2"
    ↓
-9. Controller returns success JSON
+10. Controller calls QASession.start_phase2()
    ↓
-10. JavaScript updates UI, scrolls to next item
+11. Model updates current_phase=2, phase2_started_at
+   ↓
+12. User validates items via /qa/<session_id>/phase/2
+    ↓
+13. User adds custom item via /session/<id>/add-item
+    ↓
+14. Controller calls QASessionPhase2Item.add_manual_item()
+    ↓
+15. User imports template via /session/<id>/import-template
+    ↓
+16. Controller calls QASessionPhase2Item.import_from_template()
+    ↓
+17. User validates all items (original + custom)
+    ↓
+18. User clicks "Complete Phase 2"
+    ↓
+19. Controller calls QASession.complete_phase2()
+    ↓
+20. Model updates phase2_completed_at
+
+Results View:
+21. User navigates to /session/<id>/results
+    ↓
+22. Controller fetches validations grouped by phase
+    ↓
+23. View renders three tabs: Phase 1, Phase 2, Timeline
+    ↓
+24. Each tab shows relevant validations and summaries
 ```
 
 ## File Structure
@@ -155,36 +192,49 @@ HTML templates with Jinja2:
 ```
 qa_tracker/
 │
-├── app.py                 # Flask app and controllers (routes)
-├── models.py              # Data models and database logic
-├── requirements.txt       # Python dependencies
-├── sample_data.py        # Script to create sample data
+├── app.py                      # Flask app and controllers (routes)
+├── models.py                   # Data models and database logic
+├── config.py                   # Database configuration
+├── requirements.txt            # Python dependencies
+├── sample_data.py             # Script to create sample data
+├── test_setup.py              # Automated test setup and validation
 │
-├── templates/            # HTML templates (views)
-│   ├── base.html
-│   ├── index.html
-│   ├── create_list.html
-│   ├── view_list.html
-│   ├── add_item.html
-│   ├── published.html
-│   ├── qa_session.html
-│   └── results.html
+├── templates/                 # HTML templates (views)
+│   ├── base.html              # Base layout with navigation
+│   ├── index.html             # Homepage
+│   ├── create_list.html       # Create QA list form
+│   ├── view_list.html         # View list with items and sessions
+│   ├── add_item.html          # Add item form
+│   ├── published.html         # Published lists with sessions
+│   ├── start_session.html     # Create new session form
+│   ├── qa_session_phase.html  # Phase 1 or Phase 2 QA interface
+│   ├── session_results.html   # Three-tab results view
+│   └── templates_manage.html  # Template management interface
 │
-├── static/               # CSS, JS, images
+├── static/                    # CSS, JS, images
 │   └── css/
-│       └── style.css
+│       └── style.css          # Comprehensive styling with phase UI
 │
-├── qa_tracker.db        # SQLite database (created on first run)
+├── tests/                     # Test suite
+│   ├── test_models.py         # Model unit tests
+│   └── test_api.py            # API endpoint tests
 │
-├── README.md            # Full documentation
-├── QUICKSTART.md        # Quick start guide
-└── ARCHITECTURE.md      # This file
+├── qa_tracker.db             # SQLite database (created on first run)
+│
+├── README.md                 # Full documentation
+├── QUICKSTART.md             # Quick start guide
+├── ARCHITECTURE.md           # This file
+├── TESTING.md                # Comprehensive testing guide
+├── CHANGES.md                # Changelog
+├── DATABASE_SETUP.md         # Database backend setup guide
+└── DATABASE_QUICK_REF.md     # Database quick reference
 ```
 
 ## Technology Stack
 
 - **Backend**: Python 3.x + Flask 3.0
-- **Database**: SQLite 3
+- **ORM**: SQLAlchemy 2.0
+- **Database**: SQLite 3 (default), PostgreSQL, MySQL, Snowflake, or Databricks
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
 - **Template Engine**: Jinja2
 - **Architecture**: MVC (Model-View-Controller)
@@ -241,22 +291,37 @@ For larger scale:
 Easy places to extend functionality:
 
 1. **Custom Status Types**: Modify `qa_validations.status` CHECK constraint
-2. **Item Templates**: Add common test patterns to speed up list creation
-3. **Export/Import**: Add JSON/CSV export of lists and results
-4. **Screenshots**: Attach images to validation results
-5. **Test Automation**: Link automated test runs to QA items
-6. **Notifications**: Email alerts for failed validations
-7. **Analytics**: Dashboard with trends and metrics
-8. **API**: RESTful API for integration with CI/CD
+2. ~~**Item Templates**: Add common test patterns to speed up list creation~~ ✅ **Implemented**
+3. ~~**Session Tracking**: Group validations by date/time sessions~~ ✅ **Implemented**
+4. **Export/Import**: Add JSON/CSV export of lists and results
+5. **Screenshots**: Attach images to validation results
+6. **Test Automation**: Link automated test runs to QA items
+7. **Notifications**: Email alerts for phase completions
+8. **Analytics**: Dashboard with trends and metrics over time
+9. **API**: RESTful API for integration with CI/CD
+10. **User Authentication**: Flask-Login for multi-user support with roles
 
 ## Testing Strategy
 
-Recommended testing approach:
+Implemented testing approach:
 
-1. **Unit Tests**: Test model methods independently
-2. **Integration Tests**: Test route handlers with test database
-3. **UI Tests**: Selenium or Playwright for end-to-end flows
-4. **Manual Testing**: Use sample_data.py to verify features
+1. **Model Unit Tests** (`tests/test_models.py`): 50+ tests covering all service classes
+   - Database, QAList, QAItem, QASession, QAValidation, QATemplate, QASessionPhase2Item
+   - Comprehensive coverage of CRUD operations, phase transitions, validations
+2. **API Integration Tests** (`tests/test_api.py`): 40+ tests covering all Flask routes
+   - Session management, Phase 1/2 workflow, template management
+   - Phase 2 item operations, validation recording, results display
+3. **Automated Setup Test** (`test_setup.py`): End-to-end workflow validation
+   - Database initialization, sample data creation, complete two-phase workflow
+4. **Manual Testing**: Comprehensive guide in `TESTING.md`
+
+Run tests with:
+```bash
+python test_setup.py                   # Quick setup validation
+python -m unittest discover tests      # Full test suite
+python -m unittest tests.test_models   # Model tests only
+python -m unittest tests.test_api      # API tests only
+```
 
 ## Deployment Options
 
